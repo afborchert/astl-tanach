@@ -1,0 +1,132 @@
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tropes is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tropes is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+opset level1_segment = [
+   "etnahta_segment"
+   "siluq_segment"
+];
+
+opset level1_clause = [
+   "etnahta_clause"
+   "siluq_clause"
+];
+
+opset level1_disjunctive = [
+   "etnahta_word"
+   "siluq_word"
+];
+
+opset level2_segment = [
+   "level2_segment"
+];
+
+opset level2_clause = [
+   "segol_clause"
+   "shalshelet_clause"
+   "tipeha_clause"
+   "zaqef_clause"
+];
+
+opset level2_disjunctive = [
+   "metigah_zaqef_word"
+   "munah_zaqef_word"
+   "segol_word"
+   "shalshelet_gedolah_word"
+   "tipeha_word"
+   "zaqef_gadol_word"
+   "zaqef_qatan_word"
+];
+
+opset level3_segment = [
+   "level3_segment"
+];
+
+opset level3_clause = [
+   "pashta_clause"
+   "revia_clause"
+   "tevir_clause"
+   "yetiv_clause"
+   "zarqa_clause"
+];
+
+opset level3_disjunctive = [
+   "pashta_word"
+   "revia_word"
+   "tevir_word"
+   "yetiv_word"
+   "zarqa_word"
+];
+
+opset level4_segment = [
+   "level4_segment"
+];
+
+opset level4_clause = [
+   "geresh_clause"
+   "gershayim_clause"
+   "legarmeh_clause"
+   "pazer_clause"
+   "qarney_para_clause"
+   "telisha_gedola_clause"
+];
+
+opset level4_disjunctive = [
+   "geresh_word"
+   "gershayim_word"
+   "legarmeh_word"
+   "pazer_word"
+   "qarney_para_word"
+   "telisha_gedola_word"
+];
+
+opset segment = [
+   level1_segment
+   "level2_segment"
+   "level3_segment"
+   "level4_segment"
+];
+
+opset clause = [
+   level1_clause
+   level2_clause
+   level3_clause
+   level4_clause
+];
+
+opset disjunctive = [
+   level1_disjunctive
+   level2_disjunctive
+   level3_disjunctive
+   level4_disjunctive
+];
+
+opset conjunctive = [
+   "mahapakh_word"
+   "merkha_word"
+   "merkha_kefula_word"
+   "munah_word"
+   "qadma_word"
+   "shalshelet_qetannah_word"
+   "telisha_qetana_word"
+   "yerah_ben_yomo_word"
+];
+
+opset word = [
+   disjunctive
+   conjunctive
+];

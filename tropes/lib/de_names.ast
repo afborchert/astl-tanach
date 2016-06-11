@@ -1,0 +1,189 @@
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tropes is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tropes is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/* de_names: German-language names for the individual components */
+
+import opsets;
+import level;
+
+/* we distinguish between name and link:
+   link: wiki link of de:wp (empty, if there is no article yet)
+   name: to be used name (use hyphens instead of spaces)
+*/
+
+attribution rules de_names {
+   /* individual words */
+   ("etnahta_word" *) as w -> {
+      w.name = "Etnachta";
+      w.link = "Etnachta";
+   }
+   ("geresh_word" *) as w -> {
+      w.name = "Geresch";
+      w.link = "Geresch";
+   }
+   ("gershayim_word" *) as w -> {
+      w.name = "Gerschajim";
+      w.link = "Gerschajim";
+   }
+   ("legarmeh_word" *) as w -> {
+      w.name = "Legarmeh";
+      w.link = "Legarmeh";
+   }
+   ("mahapakh_word" *) as w -> {
+      w.name = "Mahpach";
+      w.link = "Mahpach";
+   }
+   ("merkha_kefula_word" *) as w -> {
+      w.name = "Mercha-Chefula";
+      w.link = "Mercha Chefula";
+   }
+   ("merkha_word" *) as w -> {
+      w.name = "Mercha";
+      w.link = "Mercha";
+   }
+   ("metigah_zaqef_word" *) as w -> {
+      w.name = "metigah_zaqef";
+      w.link = "";
+   }
+   ("munah_word" *) as w -> {
+      w.name = "Munach";
+      w.link = "Munach";
+   }
+   ("munah_zaqef_word" *) as w -> {
+      w.name = "munah_zaqef";
+      w.link = "";
+   }
+   ("pashta_word" *) as w -> {
+      w.name = "Paschta";
+      w.link = "Paschta";
+   }
+   ("pazer_word" *) as w -> {
+      w.name = "Paser";
+      w.link = "Paser";
+   }
+   ("qadma_word" *) as w -> {
+      w.name = "Kadma";
+      w.link = "Kadma";
+   }
+   ("qarney_para_word" *) as w -> {
+      w.name = "Paser-Gadol";
+      w.link = "Paser Gadol";
+   }
+   ("revia_word" *) as w -> {
+      w.name = "Rewi'i";
+      w.link = "Rewi'i";
+   }
+   ("segol_word" *) as w -> {
+      w.name = "Segol";
+      w.link = "Segol";
+   }
+   ("shalshelet_gedolah_word" *) as w -> {
+      w.name = "Schalschelet";
+      w.link = "Schalschelet";
+   }
+   ("shalshelet_qetannah_word" *) as w -> {
+      w.name = "shalshelet_qetannah";
+      w.link = "Schalschelet";
+   }
+   ("siluq_word" *) as w -> {
+      w.name = "Siluk";
+      w.link = "Siluk";
+   }
+   ("telisha_gedola_word" *) as w -> {
+      w.name = "Telishah-Gedolah";
+      w.link = "Telishah Gedolah";
+   }
+   ("telisha_qetana_word" *) as w -> {
+      w.name = "Telishah-Ketanah";
+      w.link = "Telishah Ketanah";
+   }
+   ("tevir_word" *) as w -> {
+      w.name = "Tewir";
+      w.link = "Tewir";
+   }
+   ("tipeha_word" *) as w -> {
+      w.name = "Tifcha";
+      w.link = "Tifcha";
+   }
+   ("yerah_ben_yomo_word" *) as w -> {
+      w.name = "Jerach-ben-jomo";
+      w.link = "Jerach ben jomo";
+   }
+   ("yetiv_word" *) as w -> {
+      w.name = "Jetiw";
+      w.link = "Jetiw";
+   }
+   ("zaqef_gadol_word" *) as w -> {
+      w.name = "Sakef-Gadol";
+      w.link = "Sakef Gadol";
+   }
+   ("zaqef_qatan_word" *) as w -> {
+      w.name = "Sakef-Katan";
+      w.link = "Sakef Katan";
+   }
+   ("zarqa_word" *) as w -> {
+      w.name = "Sarka";
+      w.link = "Sarka";
+   }
+
+   /* clauses */
+   (clause w) as c -> post {
+      c.name = w.name;
+      c.trope = w.name;
+   }
+   (clause conjunctives w) as c -> post {
+      c.name = w.name & "-Phrase";
+      c.trope = w.name;
+   }
+   /* segments */
+   (segment c) as s -> post {
+      s.trope = c.trope;
+      s.name = s.trope & "-Segment";
+   }
+   (segment s1 s2) as s -> post {
+      /* nested or stepping segments */
+      if (s1.level == s2.level) {
+	 s.name = "";
+	 s.trope = "";
+      } elsif (s1.level < s2.level) {
+	 s.trope = s1.trope;
+	 s.name = s.trope & "-Segment";
+      } else {
+	 s.trope = s2.trope;
+	 s.name = s.trope & "-Segment";
+      }
+   }
+   (segment s1 s2 s3) as s -> post {
+      /* nested & stepping segments */
+      s.name = "";
+      s.trope = "";
+   }
+}
+
+/* to be invoked with
+      chapter and verse number
+   or with
+      book title, chapter, and verse number
+*/
+sub get_verse_title {
+   if (len(args) == 2) {
+      return args[0] & "," & args[1];
+   } else {
+      return args[0] & " " & args[1] & "," & args[2];
+   }
+}

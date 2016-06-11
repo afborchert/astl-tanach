@@ -1,0 +1,497 @@
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tropes is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tropes is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+%{
+namespace AstlTropes {
+   class Scanner;
+}
+
+#include <cassert>
+#include <string>
+#include <astl/syntax-tree.hpp>
+#include "operators.hpp"
+#include "scanner.hpp"
+#include "yystype.hpp"
+#include "yytname.hpp"
+
+/* location which is computed by the YYLLOC_DEFAULT macro
+   in case of a reduce before the corresponding action is executed */
+#define YYLLOC (yylhs.location)
+
+#define NODE(op) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::op))
+#define UNARY(unop, op1) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::unop, (op1)))
+#define BINARY(binop, op1,op2) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::binop, (op1), (op2)))
+#define TERTIARY(top, op1,op2,op3) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::top, (op1), (op2), (op3)))
+#define QUATERNARY(top, op1,op2,op3,op4) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::top, (op1), (op2), (op3), (op4)))
+#define QUINARY(top, op1,op2,op3,op4,op5) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::top, (op1), (op2), (op3), (op4), (op5)))
+
+#define LEAF(tk) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Token(token::tk, yytname[token::tk - 255])))
+
+#define FLATTEN(node, subnodes, op) \
+   (flatten(node, subnodes, Op::op))
+
+using namespace Astl;
+
+static NodePtr flatten(NodePtr node, NodePtr subnodes, const Operator& op);
+
+%}
+
+%skeleton "lalr1.cc"
+%define api.prefix {astltropes}
+%define api.namespace { AstlTropes }
+%defines
+%verbose
+%locations
+%token-table
+%parse-param { Scanner& scanner }
+%parse-param { Astl::NodePtr& root }
+%lex-param { Scanner& scanner }
+
+/* keywords */
+%token BOOK
+%token CLAUSE
+%token FRAGMENT
+%token LETTER
+%token PARAGRAPH
+%token VERSE
+%token WORD
+
+/* Hebrew delimiters */
+%token MAQAF
+%token PASEQ
+%token SOF_PASUQ
+
+/* paragraph markers */
+%token PE
+%token SAMEKH
+%token NUN_HAFUKHA
+
+/* tropes */
+%token DARGA
+%token ETNAHTA
+%token GERESH
+%token GERESH_MUQDAM
+%token GERSHAYIM
+%token LEGARMEH
+%token MAHAPAKH
+%token MERKHA
+%token MERKHA_KEFULA
+%token METIGAH_ZAQEF
+%token MUNAH
+%token MUNAH_ZAQEF
+%token PASHTA
+%token PAZER
+%token QADMA
+%token QARNEY_PARA
+%token REVIA
+%token SEGOL
+%token SHALSHELET_GEDOLAH
+%token SHALSHELET_QETANNAH
+%token SILUQ
+%token TELISHA_GEDOLA
+%token TELISHA_QETANA
+%token TEVIR
+%token TIPEHA
+%token YERAH_BEN_YOMO
+%token YETIV
+%token ZAQEF_GADOL
+%token ZAQEF_QATAN
+%token ZARQA
+
+/* composite tokens */
+%token HEX_STRING
+%token UTF8_STRING
+%token INTEGER
+
+/* delimiters */
+%token LBRACE
+%token RBRACE
+%token COLON
+%token COMMA
+
+/* comment delimiter */
+%token COMMENT
+
+%start	start
+
+%%
+
+start: book
+      { root = $1; }
+   | verse
+      { root = $1; }
+   ;
+
+string: UTF8_STRING
+   | HEX_STRING
+   ;
+
+text: LBRACE string RBRACE
+      { $$ = UNARY(text, $2); }
+   ;
+fragment: WORD | FRAGMENT | LETTER
+   ;
+word_without_tropes: fragment text
+      { $$ = UNARY(word_without_tropes, $2); }
+   ;
+paseq: PASEQ string
+      { $$ = UNARY(paseq, $2); }
+   ;
+/* words with conjunctive tropes */
+darga_word: DARGA fragment text
+      { $$ = UNARY(darga_word, $3); }
+   ;
+mahapakh_word: MAHAPAKH fragment text
+      { $$ = UNARY(mahapakh_word, $3); }
+   ;
+merkha_word: MERKHA fragment text
+      { $$ = UNARY(merkha_word, $3); }
+   ;
+merkha_kefula_word: MERKHA_KEFULA fragment text
+      { $$ = UNARY(merkha_kefula_word, $3); }
+   ;
+munah_word: MUNAH fragment text
+      { $$ = UNARY(munah_word, $3); }
+   ;
+qadma_word: QADMA fragment text
+      { $$ = UNARY(qadma_word, $3); }
+   ;
+shalshelet_qetannah_word: SHALSHELET_QETANNAH fragment text
+      { $$ = UNARY(shalshelet_qetannah_word, $3); }
+   ;
+telisha_qetana_word: TELISHA_QETANA fragment text
+      { $$ = UNARY(telisha_qetana_word, $3); }
+   ;
+yerah_ben_yomo_word: YERAH_BEN_YOMO fragment text
+      { $$ = UNARY(yerah_ben_yomo_word, $3); }
+   ;
+conjunctive_word: darga_word
+   | mahapakh_word
+   | merkha_word
+   | merkha_kefula_word
+   | munah_word
+   | qadma_word
+   | shalshelet_qetannah_word
+   | telisha_qetana_word
+   | yerah_ben_yomo_word
+   ;
+sequence_of_conjunctive_words: conjunctive_word
+   | paseq
+   | word_without_tropes
+   | sequence_of_conjunctive_words conjunctive_word
+      { $$ = BINARY(sequence_of_conjunctive_words, $1, $2); }
+   | sequence_of_conjunctive_words paseq
+      { $$ = BINARY(sequence_of_conjunctive_words, $1, $2); }
+   | sequence_of_conjunctive_words word_without_tropes
+      { $$ = BINARY(sequence_of_conjunctive_words, $1, $2); }
+   ;
+conjunctive_words: sequence_of_conjunctive_words
+      { $$ = FLATTEN(NODE(conjunctive_words),
+	    $1, sequence_of_conjunctive_words); }
+   ;
+
+/* disjunctive tropes, 4th level */
+gershayim_word: GERSHAYIM fragment text
+      { $$ = UNARY(gershayim_word, $3); }
+   ;
+gershayim_clause: gershayim_word
+      { $$ = UNARY(gershayim_clause, $1); }
+   | GERSHAYIM CLAUSE conjunctive_words gershayim_word
+      { $$ = BINARY(gershayim_clause, $3, $4); }
+   ;
+geresh_word: GERESH fragment text
+      { $$ = UNARY(geresh_word, $3); }
+   | GERESH_MUQDAM fragment text
+      { $$ = UNARY(geresh_word, $3); }
+   ;
+geresh_clause: geresh_word
+      { $$ = UNARY(geresh_clause, $1); }
+   | GERESH CLAUSE conjunctive_words geresh_word
+      { $$ = BINARY(geresh_clause, $3, $4); }
+   | GERESH_MUQDAM CLAUSE conjunctive_words geresh_word
+   ;
+legarmeh_word: LEGARMEH fragment text
+      { $$ = UNARY(legarmeh_word, $3); }
+   ;
+legarmeh_clause: legarmeh_word
+      { $$ = UNARY(legarmeh_clause, $1); }
+   | LEGARMEH CLAUSE conjunctive_words legarmeh_word
+      { $$ = BINARY(legarmeh_clause, $3, $4); }
+   ;
+pazer_word: PAZER fragment text
+      { $$ = UNARY(pazer_word, $3); }
+   ;
+pazer_clause: pazer_word
+      { $$ = UNARY(pazer_clause, $1); }
+   | PAZER CLAUSE conjunctive_words pazer_word
+      { $$ = BINARY(pazer_clause, $3, $4); }
+   ;
+/* qarney_para, also named pazer_gadol */
+qarney_para_word: QARNEY_PARA fragment text
+      { $$ = UNARY(qarney_para_word, $3); }
+   ;
+qarney_para_clause: qarney_para_word
+      { $$ = UNARY(qarney_para_clause, $1); }
+   | QARNEY_PARA CLAUSE conjunctive_words qarney_para_word
+      { $$ = BINARY(qarney_para_clause, $3, $4); }
+   ;
+telisha_gedola_word: TELISHA_GEDOLA fragment text
+      { $$ = UNARY(telisha_gedola_word, $3); }
+   ;
+telisha_gedola_clause: telisha_gedola_word
+      { $$ = UNARY(telisha_gedola_clause, $1); }
+   | TELISHA_GEDOLA CLAUSE conjunctive_words telisha_gedola_word
+      { $$ = BINARY(telisha_gedola_clause, $3, $4); }
+   ;
+
+level4_clause: geresh_clause
+   | gershayim_clause
+   | legarmeh_clause
+   | pazer_clause
+   | qarney_para_clause
+   | telisha_gedola_clause
+   ;
+level4_segment: level4_clause /* trivial case */
+   | level4_clause level4_segment /* stepping segments */
+      { $$ = BINARY(level4_segment, $1, $2); }
+   ;
+
+/* disjunctive tropes, 3rd level */
+tevir_word: TEVIR fragment text
+      { $$ = UNARY(tevir_word, $3); }
+   ;
+tevir_clause: tevir_word
+      { $$ = UNARY(tevir_clause, $1); }
+   | TEVIR CLAUSE conjunctive_words tevir_word
+      { $$ = BINARY(tevir_clause, $3, $4); }
+   ;
+
+revia_word: REVIA fragment text
+      { $$ = UNARY(revia_word, $3); }
+   ;
+revia_clause: revia_word
+      { $$ = UNARY(revia_clause, $1); }
+   | REVIA CLAUSE conjunctive_words revia_word
+      { $$ = BINARY(revia_clause, $3, $4); }
+   ;
+
+pashta_word: PASHTA fragment text
+      { $$ = UNARY(pashta_word, $3); }
+   ;
+pashta_clause: pashta_word
+      { $$ = UNARY(pashta_clause, $1); }
+   | PASHTA CLAUSE conjunctive_words pashta_word
+      { $$ = BINARY(pashta_clause, $3, $4); }
+   ;
+
+yetiv_word: YETIV fragment text
+      { $$ = UNARY(yetiv_word, $3); }
+   ;
+yetiv_clause: yetiv_word
+      { $$ = UNARY(yetiv_clause, $1); }
+   | YETIV CLAUSE conjunctive_words yetiv_word
+      { $$ = BINARY(yetiv_clause, $3, $4); }
+   ;
+zarqa_word: ZARQA fragment text
+      { $$ = UNARY(zarqa_word, $3); }
+   ;
+zarqa_clause: zarqa_word
+      { $$ = UNARY(zarqa_clause, $1); }
+   | ZARQA CLAUSE conjunctive_words zarqa_word
+      { $$ = BINARY(zarqa_clause, $3, $4); }
+   ;
+
+level3_clause: pashta_clause
+   | revia_clause
+   | tevir_clause
+   | yetiv_clause
+   | zarqa_clause
+   ;
+level3_segment: level3_clause /* trivial case */
+   /* nested segments */
+   | level4_segment level3_clause
+      { $$ = BINARY(level3_segment, $1, $2); }
+   /* stepping segments */
+   | level3_clause level3_segment
+      { $$ = BINARY(level3_segment, $1, $2); }
+   /* nested & stepping segments */
+   | level4_segment level3_clause level3_segment
+      { $$ = TERTIARY(level3_segment, $1, $2, $3); }
+   ;
+
+/* disjunctive tropes, 2nd level */
+tipeha_word: TIPEHA fragment text
+      { $$ = UNARY(tipeha_word, $3); }
+   ;
+tipeha_clause: tipeha_word
+      { $$ = UNARY(tipeha_clause, $1); }
+   | TIPEHA CLAUSE conjunctive_words tipeha_word
+      { $$ = BINARY(tipeha_clause, $3, $4); }
+   ;
+
+zaqef_qatan_word: ZAQEF_QATAN fragment text
+      { $$ = UNARY(zaqef_qatan_word, $3); }
+   ;
+munah_zaqef_word: MUNAH_ZAQEF fragment text
+      { $$ = UNARY(munah_zaqef_word, $3); }
+   ;
+metigah_zaqef_word: METIGAH_ZAQEF fragment text
+      { $$ = UNARY(metigah_zaqef_word, $3); }
+   ;
+zaqef_gadol_word: ZAQEF_GADOL fragment text
+      { $$ = UNARY(zaqef_gadol_word, $3); }
+   ;
+zaqef_word: zaqef_qatan_word
+   | munah_zaqef_word
+   | metigah_zaqef_word
+   | zaqef_gadol_word
+   ;
+zaqef_clause: zaqef_word
+      { $$ = UNARY(zaqef_clause, $1); }
+   | ZAQEF_QATAN CLAUSE conjunctive_words zaqef_word
+      { $$ = BINARY(zaqef_clause, $3, $4); }
+   | MUNAH_ZAQEF CLAUSE conjunctive_words zaqef_word
+      { $$ = BINARY(zaqef_clause, $3, $4); }
+   | METIGAH_ZAQEF CLAUSE conjunctive_words zaqef_word
+      { $$ = BINARY(zaqef_clause, $3, $4); }
+   | ZAQEF_GADOL CLAUSE conjunctive_words zaqef_word
+      { $$ = BINARY(zaqef_clause, $3, $4); }
+   ;
+
+segol_word: SEGOL fragment text
+      { $$ = UNARY(segol_word, $3); }
+   ;
+segol_clause: segol_word
+      { $$ = UNARY(segol_clause, $1); }
+   | SEGOL CLAUSE conjunctive_words segol_word
+      { $$ = BINARY(segol_clause, $3, $4); }
+   ;
+
+shalshelet_gedolah_word: SHALSHELET_GEDOLAH fragment text
+      { $$ = UNARY(shalshelet_gedolah_word, $3); }
+   ;
+shalshelet_clause: shalshelet_gedolah_word
+      { $$ = UNARY(shalshelet_clause, $1); }
+   | SHALSHELET_GEDOLAH CLAUSE conjunctive_words shalshelet_gedolah_word
+      { $$ = BINARY(shalshelet_clause, $3, $4); }
+   ;
+
+level2_clause: segol_clause | shalshelet_clause | tipeha_clause | zaqef_clause
+   ;
+
+level2_segment: level2_clause /* trivial case */
+   /* nested segments */
+   | level3_segment level2_clause
+      { $$ = BINARY(level2_segment, $1, $2); }
+   /* stepping segments */
+   | level2_clause level2_segment
+      { $$ = BINARY(level2_segment, $1, $2); }
+   /* nested & stepping segments */
+   | level3_segment level2_clause level2_segment
+      { $$ = TERTIARY(level2_segment, $1, $2, $3); }
+   ;
+
+/* disjunctive tropes, 1st level */
+etnahta_word: ETNAHTA fragment text
+      { $$ = UNARY(etnahta_word, $3); }
+   ;
+etnahta_clause: etnahta_word
+      { $$ = UNARY(etnahta_clause, $1); }
+   | ETNAHTA CLAUSE conjunctive_words etnahta_word
+      { $$ = BINARY(etnahta_clause, $3, $4); }
+   ;
+etnahta_segment: etnahta_clause
+   | level2_segment etnahta_clause
+      { $$ = BINARY(etnahta_segment, $1, $2); }
+   ;
+siluq_word: SILUQ fragment text
+      { $$ = UNARY(siluq_word, $3); }
+   ;
+siluq_clause: siluq_word
+      { $$ = UNARY(siluq_clause, $1); }
+   | SILUQ CLAUSE conjunctive_words siluq_word
+      { $$ = BINARY(siluq_clause, $3, $4); }
+   /* defective siluq clause due to the missing meteg as in Gen 32:24 */
+   | conjunctive_words
+      { $$ = UNARY(siluq_clause, $1); }
+   ;
+siluq_segment: siluq_clause
+   | level2_segment siluq_clause
+      { $$ = BINARY(siluq_segment, $1, $2); }
+   ;
+
+/* top level */
+sof_pasuq_segment: siluq_segment
+      { $$ = UNARY(sof_pasuq_segment, $1); }
+   | etnahta_segment siluq_segment
+      { $$ = BINARY(sof_pasuq_segment, $1, $2); }
+   ;
+paragraph_marker: PE string
+      { $$ = UNARY(paragraph_marker, $2); }
+   | SAMEKH string
+      { $$ = UNARY(paragraph_marker, $2); }
+   | NUN_HAFUKHA string
+      { $$ = UNARY(paragraph_marker, $2); }
+   ;
+paragraph_markers: PARAGRAPH paragraph_marker
+      { $$ = UNARY(paragraph_markers, $2); }
+   | PARAGRAPH paragraph_marker paragraph_marker
+      { $$ = BINARY(paragraph_markers, $2, $3); }
+   ;
+sof_pasuq: SOF_PASUQ string
+      { $$ = UNARY(sof_pasuq, $2); }
+   ;
+verse: VERSE INTEGER COLON INTEGER LBRACE sof_pasuq_segment sof_pasuq RBRACE
+      { $$ = QUATERNARY(verse, $2, $4, $6, $7); }
+   | VERSE INTEGER COLON INTEGER LBRACE sof_pasuq_segment sof_pasuq
+	 paragraph_markers RBRACE
+      { $$ = QUATERNARY(verse, $2, $4, $6, $7); }
+   | VERSE INTEGER COLON INTEGER LBRACE sof_pasuq_segment
+	 paragraph_markers RBRACE
+      { $$ = TERTIARY(verse, $2, $4, $6); }
+   | VERSE INTEGER COLON INTEGER LBRACE sof_pasuq_segment RBRACE
+      { $$ = TERTIARY(verse, $2, $4, $6); }
+   ;
+verses: verse
+   | verses verse
+      { $$ = BINARY(verses, $1, $2); }
+   ;
+book: BOOK string LBRACE verses RBRACE
+      { $$ = BINARY(book, $2, FLATTEN(NODE(verses), $4, verses)); }
+   ;
+
+%%
+
+static NodePtr flatten(NodePtr node, NodePtr subnodes, const Operator& op) {
+   if (!subnodes->is_leaf() && subnodes->get_op() == op) {
+      flatten(node, subnodes->get_operand(0), op);
+      for (unsigned int i = 1; i < subnodes->size(); ++i) {
+	 *node += subnodes->get_operand(i);
+      }
+   } else {
+      *node += subnodes;
+   }
+   return node;
+}

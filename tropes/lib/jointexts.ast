@@ -1,0 +1,81 @@
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tropes is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tropes is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+import opsets;
+
+sub join {
+   var s = "";
+   if (len(args) == 1 && type(args[0]) == "list") {
+      args = args[0];
+   }
+   foreach arg in (args) {
+      var w;
+      if (type(arg) == "string") {
+	 w = arg;
+      } else {
+	 w = arg.text;
+      }
+      if (s == "") {
+	 s = w;
+      } else {
+	 s &= " " & w;
+      }
+   }
+   return s;
+}
+
+attribution rules {
+   (word ("text" token)) as w -> {
+      w.text = tokentext(token);
+   }
+   ("conjunctive_words" word...) as cw -> post {
+      cw.length = len(word);
+      cw.text = join(word);
+   }
+   (clause conjunctives disjunctive) as c -> post {
+      c.length = conjunctives.length + 1;
+      c.text = join(conjunctives.text, disjunctive.text);
+   }
+   (clause disjunctive) as c -> post {
+      c.length = 1;
+      c.text = disjunctive.text;
+   }
+   (segment c) as s -> post {
+      s.length = c.length;
+      s.text = c.text;
+   }
+   (segment s1 s2) as s -> post {
+      /* nested or stepping segments */
+      s.length = s1.length + s2.length;
+      s.text = join(s1.text, s2.text);
+   }
+   (segment s1 s2 s3) as s -> post {
+      /* nested & stepping segments */
+      s.length = s1.length + s2.length + s3.length;
+      s.text = join(s1.text, s2.text, s3.text);
+   }
+   ("sof_pasuq_segment" siluq_segment) in ("verse" *) as v -> post {
+      v.length = siluq_segment.length;
+      v.text = siluq_segment.text;
+   }
+   ("sof_pasuq_segment" etnahta_segment siluq_segment)
+	 in ("verse" *) as v -> post {
+      v.length = etnahta_segment.length + siluq_segment.length;
+      v.text = join(etnahta_segment.text, siluq_segment.text);
+   }
+}

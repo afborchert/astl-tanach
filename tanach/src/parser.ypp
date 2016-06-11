@@ -1,0 +1,442 @@
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tanach is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tanach is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+%{
+namespace AstlTanach {
+   class Scanner;
+}
+
+#include <cassert>
+#include <memory>
+#include <string>
+#include <astl/syntax-tree.hpp>
+#include "operators.hpp"
+#include "scanner.hpp"
+#include "yystype.hpp"
+#include "yytname.hpp"
+
+using namespace Astl;
+
+/* location which is computed by the YYLLOC_DEFAULT macro
+   in case of a reduce before the corresponding action is executed */
+#define YYLLOC (yylhs.location)
+
+#define NODE(op) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::op))
+#define UNARY(unop, op1) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::unop, (op1)))
+#define BINARY(binop, op1,op2) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::binop, (op1), (op2)))
+#define TERTIARY(top, op1,op2,op3) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::top, (op1), (op2), (op3)))
+#define QUATERNARY(top, op1,op2,op3,op4) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::top, (op1), (op2), (op3), (op4)))
+#define QUINARY(top, op1,op2,op3,op4,op5) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Op::top, (op1), (op2), (op3), (op4), (op5)))
+
+#define LEAF(tk) \
+   (std::make_shared<Node>(make_loc(YYLLOC), Token(token::tk, yytname[token::tk - 255])))
+
+#define FLATTEN(node, subnodes, op) \
+   (flatten(node, subnodes, Op::op))
+
+#define TOKEN(token, op) \
+   (make_token(NODE(op), token))
+
+static NodePtr flatten(NodePtr node, NodePtr subnodes, const Operator& op);
+static NodePtr make_token(NodePtr node, NodePtr token);
+
+%}
+
+%skeleton "lalr1.cc"
+%define api.prefix {astltanach}
+%define api.namespace { AstlTanach }
+%defines
+%verbose
+%locations
+%token-table
+%parse-param { Scanner& scanner }
+%parse-param { Astl::NodePtr& root }
+%lex-param { Scanner& scanner }
+
+/* Characters of the Hebrew Unicode block in the order of appearance */
+
+%token ETNAHTA		/* U+0591 */
+%token SEGOL		/* U+0592 */
+%token SHALSHELET	/* U+0593 */
+%token ZAQEF_QATAN	/* U+0594 */
+%token ZAQEF_GADOL	/* U+0595 */
+%token TIPEHA		/* U+0596 */
+%token REVIA		/* U+0597 */
+%token TSINNORIT	/* U+0598 */ /* misnamed as zarqa by Unicode */
+%token PASHTA		/* U+0599 */
+%token YETIV		/* U+059A */
+%token TEVIR		/* U+059B */
+%token GERESH		/* U+059C */
+%token GERESH_MUQDAM	/* U+059D */
+%token GERSHAYIM	/* U+059E */
+%token QARNEY_PARA	/* U+059F */
+%token TELISHA_GEDOLA	/* U+05A0 */
+%token PAZER		/* U+05A1 */
+%token ATNAH_HAFUKH	/* U+05A2 */
+%token MUNAH		/* U+05A3 */
+%token MAHAPAKH		/* U+05A4 */
+%token MERKHA		/* U+05A5 */
+%token MERKHA_KEFULA	/* U+05A6 */
+%token DARGA		/* U+05A7 */
+%token QADMA		/* U+05A8 */
+%token TELISHA_QETANA	/* U+05A9 */
+%token YERAH_BEN_YOMO	/* U+05AA */
+%token SOF_PASUQ	/* U+05C3 */
+
+%token OLE		/* U+05AB */
+%token ILUY		/* U+05AC */
+%token DEHI		/* U+05AD */
+%token ZARQA		/* U+05AE */ /* misnamed as zinor by Unicode */
+%token MASORA_CIRCLE	/* U+05AF */
+%token SHEVA		/* U+05B0 */
+%token HATAF_SEGOL	/* U+05B1 */
+%token HATAF_PATAH	/* U+05B2 */
+%token HATAF_QAMATS	/* U+05B3 */
+%token HIRIQ		/* U+05B4 */
+%token TSERE		/* U+05B5 */
+%token POINT_SEGOL	/* U+05B6 */
+%token POINT_PATAH	/* U+05B7 */
+%token POINT_QAMATS	/* U+05B8 */
+%token POINT_HOLAM	/* U+05B9 */
+%token POINT_HOLAM_HASER_FOR_VAV	/* U+05BA */
+%token POINT_QUBUTS	/* U+05BB */
+%token POINT_DEGESH_OR_MAPIQ	/* U+05BC */
+%token POINT_METEG	/* U+05BD */
+%token MAQAF		/* U+05BE */ /* serves as hyphen, connecting words */
+%token POINT_RAFE	/* U+05BF */
+
+%token PASEQ		/* U+05C0 */
+%token SHIN_DOT		/* U+05C1 */
+%token POINT_SIN_DOT	/* U+05C2 */
+%token MARK_UPPER_DOT	/* U+05C4 */
+%token MARK_LOWER_DOT	/* U+05C5 */
+%token NUN_HAFUKHA	/* U+05C6 */
+%token QAMATS_QATAN	/* U+05C7 */
+
+%token ALEF		/* U+05D0 */
+%token BET		/* U+05D1 */
+%token GIMEL		/* U+05D2 */
+%token DALET		/* U+05D3 */
+%token HE		/* U+05D4 */
+%token VAV		/* U+05D5 */
+%token ZAYIN		/* U+05D6 */
+%token HET		/* U+05D7 */
+%token TET		/* U+05D8 */
+%token YOD		/* U+05D9 */
+%token FINAL_KAF	/* U+05DA */
+%token KAF		/* U+05DB */
+%token LAMED		/* U+05DC */
+%token FINAL_MEM	/* U+05DD */
+%token MEM		/* U+05DE */
+%token FINAL_NUN	/* U+05DF */
+%token NUN		/* U+05E0 */
+%token SAMEKH		/* U+05E1 */
+%token AYIN		/* U+05E2 */
+%token FINAL_PE		/* U+05E3 */
+%token PE		/* U+05E4 */
+%token FINAL_TSADI	/* U+05E5 */
+%token TSADI		/* U+05E6 */
+%token QOF		/* U+05E7 */
+%token RESH		/* U+05E8 */
+%token SHIN		/* U+05E9 */
+%token TAV		/* U+05EA */
+
+%token SPACE		/* ASCII whitespace character */
+%token COMMENT		/* text sequence embedded in U+202A .. U+202C */
+%token INTEGER		/* number of chapter or verse */
+%token VERSE_BEGIN	/* indicating begin of a verse, followed by numbers */
+%token VERSE_END	/* end of a verse */
+%token ZERO_WIDTH_JOINER	/* U+200D */
+
+%start	start
+
+%%
+
+start: book
+      { root = $1; }
+   ;
+
+/* vocal points */
+dehi: DEHI { $$ = TOKEN($1, dehi); };
+hataf_patah: HATAF_PATAH { $$ = TOKEN($1, hataf_patah); };
+hataf_qamats: HATAF_QAMATS { $$ = TOKEN($1, hataf_qamats); };
+hataf_segol: HATAF_SEGOL { $$ = TOKEN($1, hataf_segol); };
+hiriq: HIRIQ { $$ = TOKEN($1, hiriq); };
+iluy: ILUY { $$ = TOKEN($1, iluy); };
+masora_circle: MASORA_CIRCLE { $$ = TOKEN($1, masora_circle); };
+nun_hafukha: NUN_HAFUKHA { $$ = TOKEN($1, nun_hafukha); };
+ole: OLE { $$ = TOKEN($1, ole); };
+degesh_or_mapiq: POINT_DEGESH_OR_MAPIQ { $$ = TOKEN($1, degesh_or_mapiq); };
+holam: POINT_HOLAM { $$ = TOKEN($1, holam); };
+holam_haser_for_vav: POINT_HOLAM_HASER_FOR_VAV { $$ = TOKEN($1, holam_haser_for_vav); };
+meteg: POINT_METEG { $$ = TOKEN($1, meteg); };
+patah: POINT_PATAH { $$ = TOKEN($1, patah); };
+qamats: POINT_QAMATS { $$ = TOKEN($1, qamats); };
+qubuts: POINT_QUBUTS { $$ = TOKEN($1, qubuts); };
+rafe: POINT_RAFE { $$ = TOKEN($1, rafe); };
+point_segol: POINT_SEGOL { $$ = TOKEN($1, point_segol); };
+sin_dot: POINT_SIN_DOT { $$ = TOKEN($1, sin_dot); };
+qamats_qatan: QAMATS_QATAN { $$ = TOKEN($1, qamats_qatan); };
+sheva: SHEVA { $$ = TOKEN($1, sheva); };
+shin_dot: SHIN_DOT { $$ = TOKEN($1, shin_dot); };
+tsere: TSERE { $$ = TOKEN($1, tsere); };
+
+vocal_point_character: dehi | hataf_patah | hataf_qamats | hataf_segol | hiriq | iluy
+   | masora_circle | nun_hafukha | ole
+   | degesh_or_mapiq | holam | holam_haser_for_vav
+   | meteg | patah | qamats | qubuts | rafe
+   | point_segol | sin_dot | qamats_qatan | sheva | shin_dot
+   | tsere
+   ;
+vocal_point: vocal_point_character
+      { $$ = UNARY(vocal_point, $1); }
+   ;
+
+lower_punctum_extraordinarium: MARK_LOWER_DOT
+      { $$ = TOKEN($1, lower_punctum_extraordinarium); }
+   ;
+upper_punctum_extraordinarium: MARK_UPPER_DOT
+      { $$ = TOKEN($1, upper_punctum_extraordinarium); }
+   ;
+punctum_extraordinarium: lower_punctum_extraordinarium
+   | upper_punctum_extraordinarium
+   ;
+
+alef: ALEF { $$ = TOKEN($1, alef); };
+bet: BET { $$ = TOKEN($1, bet); };
+gimel: GIMEL { $$ = TOKEN($1, gimel); };
+dalet: DALET { $$ = TOKEN($1, dalet); };
+he: HE { $$ = TOKEN($1, he); };
+vav: VAV { $$ = TOKEN($1, vav); };
+zayin: ZAYIN { $$ = TOKEN($1, zayin); };
+het: HET { $$ = TOKEN($1, het); };
+tet: TET { $$ = TOKEN($1, tet); };
+yod: YOD { $$ = TOKEN($1, yod); };
+final_kaf: FINAL_KAF { $$ = TOKEN($1, final_kaf); };
+kaf: KAF { $$ = TOKEN($1, kaf); };
+lamed: LAMED { $$ = TOKEN($1, lamed); };
+final_mem: FINAL_MEM { $$ = TOKEN($1, final_mem); };
+mem: MEM { $$ = TOKEN($1, mem); };
+final_nun: FINAL_NUN { $$ = TOKEN($1, final_nun); };
+nun: NUN { $$ = TOKEN($1, nun); };
+samekh: SAMEKH { $$ = TOKEN($1, samekh); };
+ayin: AYIN { $$ = TOKEN($1, ayin); };
+final_pe: FINAL_PE { $$ = TOKEN($1, final_pe); };
+pe: PE { $$ = TOKEN($1, pe); };
+final_tsadi: FINAL_TSADI { $$ = TOKEN($1, final_tsadi); };
+tsadi: TSADI { $$ = TOKEN($1, tsadi); };
+qof: QOF { $$ = TOKEN($1, qof); };
+resh: RESH { $$ = TOKEN($1, resh); };
+shin: SHIN { $$ = TOKEN($1, shin); };
+tav: TAV { $$ = TOKEN($1, tav); };
+
+letter_character: alef | bet | gimel | dalet | he | vav | zayin | het | tet | yod
+   | final_kaf | kaf | lamed | final_mem | mem | final_nun | nun | samekh | ayin
+   | final_pe | pe | final_tsadi | tsadi | qof | resh | shin | tav
+   ;
+
+atnah_hafukh: ATNAH_HAFUKH { $$ = TOKEN($1, atnah_hafukh); };
+darga: DARGA { $$ = TOKEN($1, darga); };
+etnahta: ETNAHTA { $$ = TOKEN($1, etnahta); };
+geresh: GERESH { $$ = TOKEN($1, geresh); };
+geresh_muqdam: GERESH_MUQDAM { $$ = TOKEN($1, geresh_muqdam); };
+gershayim: GERSHAYIM { $$ = TOKEN($1, gershayim); };
+mahapakh: MAHAPAKH { $$ = TOKEN($1, mahapakh); };
+merkha: MERKHA { $$ = TOKEN($1, merkha); };
+merkha_kefula: MERKHA_KEFULA { $$ = TOKEN($1, merkha_kefula); };
+munah: MUNAH { $$ = TOKEN($1, munah); };
+pashta: PASHTA { $$ = TOKEN($1, pashta); };
+pazer: PAZER { $$ = TOKEN($1, pazer); };
+qadma: QADMA { $$ = TOKEN($1, qadma); };
+qarney_para: QARNEY_PARA { $$ = TOKEN($1, qarney_para); };
+revia: REVIA { $$ = TOKEN($1, revia); };
+segol: SEGOL { $$ = TOKEN($1, segol); };
+shalshelet: SHALSHELET { $$ = TOKEN($1, shalshelet); };
+telisha_qetana: TELISHA_QETANA { $$ = TOKEN($1, telisha_qetana); };
+telisha_gedola: TELISHA_GEDOLA { $$ = TOKEN($1, telisha_gedola); };
+tevir: TEVIR { $$ = TOKEN($1, tevir); };
+tipeha: TIPEHA { $$ = TOKEN($1, tipeha); };
+tsinnorit: TSINNORIT { $$ = TOKEN($1, tsinnorit); };
+yerah_ben_yomo: YERAH_BEN_YOMO { $$ = TOKEN($1, yerah_ben_yomo); };
+yetiv: YETIV { $$ = TOKEN($1, yetiv); };
+zaqef_gadol: ZAQEF_GADOL { $$ = TOKEN($1, zaqef_gadol); };
+zaqef_qatan: ZAQEF_QATAN { $$ = TOKEN($1, zaqef_qatan); };
+zarqa: ZARQA { $$ = TOKEN($1, zarqa); };
+
+trope_character: etnahta | segol | shalshelet | zaqef_qatan | zaqef_gadol | tipeha
+   | revia | zarqa | pashta | yetiv | tevir | geresh | geresh_muqdam | gershayim
+   | qarney_para | telisha_gedola | pazer | atnah_hafukh | munah | mahapakh
+   | merkha | merkha_kefula | darga | qadma | telisha_qetana | tsinnorit
+   | yerah_ben_yomo
+   ;
+trope: trope_character
+      { $$ = UNARY(trope, $1); }
+   ;
+
+zero_width_joiner: ZERO_WIDTH_JOINER { $$ = NODE(zero_width_joiner); };
+
+accent: vocal_point | trope | punctum_extraordinarium | zero_width_joiner
+   ;
+accent_sequence: accent
+   | accent_sequence accent
+      { $$ = BINARY(accent_sequence, $1, $2); }
+   ;
+
+letter: letter_character
+      { $$ = UNARY(letter, $1); }
+   | letter_character accent_sequence
+      {
+	 $$ = BINARY(letter,
+	    $1, FLATTEN(NODE(accent_sequence), $2, accent_sequence));
+      }
+   ;
+
+/* a maqaf works like a hyphen, it connects words */
+maqaf: MAQAF { $$ = TOKEN($1, maqaf); };
+
+letter_sequence: letter
+   | letter_sequence letter
+      { $$ = BINARY(letter_sequence, $1, $2); }
+   ;
+
+word_segment: letter_sequence
+      { $$ = FLATTEN(NODE(word_segment), $1, letter_sequence); }
+   ;
+
+word_segments: word_segment
+   | word_segments maqaf word_segment
+      { $$ = TERTIARY(word_segments, $1, $2, $3); }
+   | word_segments maqaf comments word_segment
+      { $$ = TERTIARY(word_segments, $1, $2, $4); }
+   ;
+
+paseq: PASEQ
+      { $$ = TOKEN($1, paseq); }
+   ;
+
+word: word_segments
+      { $$ = FLATTEN(NODE(word), $1, word_segments); }
+   | paseq
+   ;
+
+word_sequence: word
+   | word_sequence SPACE word
+      { $$ = BINARY(word_sequence, $1, $3); }
+   | word_sequence comments word
+      { $$ = BINARY(word_sequence, $1, $3); }
+   ;
+
+sof_pasuq: SOF_PASUQ { $$ = TOKEN($1, sof_pasuq); };
+
+word_sequence_with_sof_pasuq: word_sequence sof_pasuq
+      { $$ = BINARY(word_sequence_with_sof_pasuq,
+	    FLATTEN(NODE(word_sequence), $1, word_sequence), $2); }
+   | word_sequence sof_pasuq comments
+      { $$ = TERTIARY(word_sequence_with_sof_pasuq,
+	    FLATTEN(NODE(word_sequence), $1, word_sequence), $2, $3); }
+   ;
+
+verse_number: INTEGER SOF_PASUQ INTEGER
+      { $$ = BINARY(verse_number, $3, $1); }
+   ;
+
+word_sequence_with_sof_pasuq_and_paragraph_marker:
+      word_sequence_with_sof_pasuq
+   | word_sequence_with_sof_pasuq pe
+      { $$ = BINARY(word_sequence_with_sof_pasuq_and_paragraph_marker,
+	 $1, $2); }
+   | word_sequence_with_sof_pasuq samekh
+      { $$ = BINARY(word_sequence_with_sof_pasuq_and_paragraph_marker,
+	 $1, $2); }
+   | word_sequence_with_sof_pasuq nun_hafukha samekh
+      { $$ = TERTIARY(word_sequence_with_sof_pasuq_and_paragraph_marker,
+	 $1, $2, $3); }
+   /* Psalms 107:20 */
+   | word_sequence_with_sof_pasuq nun_hafukha
+      { $$ = BINARY(word_sequence_with_sof_pasuq_and_paragraph_marker,
+	 $1, $2); }
+   ;
+
+verse: word_sequence_with_sof_pasuq_and_paragraph_marker
+      { $$ = UNARY(verse, $1); }
+   | VERSE_BEGIN SPACE
+	 verse_number word_sequence_with_sof_pasuq_and_paragraph_marker
+     VERSE_END
+      { $$ = BINARY(verse, $3, $4); }
+   /* we do not always have a terminating sof pasuq, see Exodus 2:5 */
+   | VERSE_BEGIN SPACE
+	 verse_number word_sequence
+     VERSE_END
+      { $$ = BINARY(verse, $3,
+	    FLATTEN(NODE(word_sequence), $4, word_sequence)); }
+   | VERSE_BEGIN SPACE
+	 verse_number word_sequence comments
+     VERSE_END
+      { $$ = BINARY(verse, $3,
+	    FLATTEN(NODE(word_sequence), $4, word_sequence)); }
+   ;
+
+comment: COMMENT { $$ = UNARY(comment, $1); };
+
+comment_section: comment
+   | comment_section comment
+      { $$ = BINARY(comment_section, $1, $2); }
+   ;
+
+comments: comment_section
+      { $$ = FLATTEN(NODE(comments), $1, comment_section); }
+   ;
+
+comments_or_verse: verse
+   | comments
+   ;
+
+verse_sequence: comments_or_verse
+   | verse_sequence comments_or_verse
+      { $$ = BINARY(verse_sequence, $1, $2); }
+   ;
+
+book: verse_sequence
+      { $$ = FLATTEN(NODE(book), $1, verse_sequence); }
+   ;
+
+%%
+
+static NodePtr make_token(NodePtr node, NodePtr token) {
+   AttributePtr dict = token->get_attribute()->clone();
+   node->set_attribute(dict);
+   return node;
+}
+
+static NodePtr flatten(NodePtr node, NodePtr subnodes, const Operator& op) {
+   if (!subnodes->is_leaf() && subnodes->get_op() == op) {
+      flatten(node, subnodes->get_operand(0), op);
+      for (unsigned int i = 1; i < subnodes->size(); ++i) {
+	 *node += subnodes->get_operand(i);
+      }
+   } else {
+      *node += subnodes;
+   }
+   return node;
+}

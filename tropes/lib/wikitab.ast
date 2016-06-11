@@ -1,0 +1,290 @@
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tropes is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tropes is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+import opsets;
+import level;
+import jointexts;
+
+sub wikitab_end_reverse {
+   var s = "";
+   foreach w in (args[0]) {
+      if (s == "") {
+	 s = wikitab_end(w);
+      } else {
+	 s = wikitab_end(w) & " " & s;
+      }
+   }
+   return s;
+}
+
+print rules wikitab_start {
+   ("verse" chapter verse segment...) as v -> q{
+      ${"{"}| class="wikitable" style="background:#FFFFFF; font-size:85%; text-align:center;"
+      |- bgcolor="#E0E0E0"
+      | colspan="${v.colspan}"| ${v.title}
+      |-
+      |'''Gesamter Vers'''
+      | colspan="${v.length}"|
+      <div dir="rtl">${v.text}</div>
+   }
+}
+
+print rules wikitab_level1 {
+   ("verse" chapter verse segment) -> q{
+      |-
+      |'''1. Ebene'''
+      $segment
+   }
+   ("verse" chapter verse segment markers) -> q{
+      |-
+      |'''1. Ebene'''
+      $segment
+   }
+   ("sof_pasuq_segment" siluq_segment) -> q{
+      $siluq_segment
+   }
+   ("sof_pasuq_segment" etnahta_segment siluq_segment) -> q{
+      $siluq_segment
+      $etnahta_segment
+   }
+   (level1_segment *) as s -> q{
+      |colspan="${s.length}"|
+      <div dir="rtl">${s.text}</div><br />${s.name==""? "&nbsp;": s.name}
+   }
+}
+
+print rules wikitab_level2 {
+   ("verse" chapter verse segment) -> q{
+      |-
+      |'''2. Ebene'''
+      $segment
+   }
+   ("verse" chapter verse segment markers) -> q{
+      |-
+      |'''2. Ebene'''
+      $segment
+   }
+   ("sof_pasuq_segment" siluq_segment) -> q{
+      $siluq_segment
+   }
+   ("sof_pasuq_segment" etnahta_segment siluq_segment) -> q{
+      $siluq_segment
+      $etnahta_segment
+   }
+   ([level1_segment level2_segment] s1 s2) -> q{
+      $s2
+      $s1
+   }
+   ([level1_segment level2_segment] s1 s2 s3) -> q{
+      $s3
+      $s2
+      $s1
+   }
+   ("level2_segment" (["level3_segment" level3_clause] *) (level2_clause *)) as s -> q{
+      |colspan="${s.length}"|
+      <div dir="rtl">${s.text}</div><br />${s.name==""? "&nbsp;": s.name}
+   }
+   (level3_segment *) as s -> q{
+      |colspan="${s.length}"|
+      &nbsp;
+   }
+   (level1_clause *) as c -> q{
+      |colspan="${c.length}"|
+      <div dir="rtl">${c.text}</div><br />${c.name==""? "&nbsp;": c.name}
+   }
+   (level2_clause *) as c -> q{
+      |colspan="${c.length}"|
+      <div dir="rtl">${c.text}</div><br />${c.name==""? "&nbsp;": c.name}
+   }
+   (level3_clause *) as s -> q{
+      |colspan="${s.length}"|
+      &nbsp;
+   }
+}
+
+print rules wikitab_level3 {
+   ("verse" chapter verse segment) -> q{
+      |-
+      |'''3. Ebene'''
+      $segment
+   }
+   ("verse" chapter verse segment markers) -> q{
+      |-
+      |'''3. Ebene'''
+      $segment
+   }
+   ("sof_pasuq_segment" siluq_segment) -> q{
+      $siluq_segment
+   }
+   ("sof_pasuq_segment" etnahta_segment siluq_segment) -> q{
+      $siluq_segment
+      $etnahta_segment
+   }
+   ([level1_segment level2_segment level3_segment] s1 s2) -> q{
+      $s2
+      $s1
+   }
+   ([level1_segment level2_segment level3_segment] s1 s2 s3) -> q{
+      $s3
+      $s2
+      $s1
+   }
+   ("level3_segment" (["level4_segment" level4_clause] *) (level3_clause *)) as s -> q{
+      |colspan="${s.length}"|
+      <div dir="rtl">${s.text}</div><br />${s.name==""? "&nbsp;": s.name}
+   }
+   (level4_segment *) as s -> q{
+      |colspan="${s.length}"|
+      &nbsp;
+   }
+   ([level1_clause level2_clause] *) as c -> q{
+      |colspan="${c.length}"|
+      &nbsp;
+   }
+   (level3_clause *) as c -> q{
+      |colspan="${c.length}"|
+      <div dir="rtl">${c.text}</div><br />${c.name==""? "&nbsp;": c.name}
+   }
+   (level4_clause *) as s -> q{
+      |colspan="${s.length}"|
+      &nbsp;
+   }
+}
+
+print rules wikitab_level4 {
+   ("verse" chapter verse segment) -> q{
+      |-
+      |'''4. Ebene'''
+      $segment
+   }
+   ("verse" chapter verse segment markers) -> q{
+      |-
+      |'''4. Ebene'''
+      $segment
+   }
+   ("sof_pasuq_segment" siluq_segment) -> q{
+      $siluq_segment
+   }
+   ("sof_pasuq_segment" etnahta_segment siluq_segment) -> q{
+      $siluq_segment
+      $etnahta_segment
+   }
+   ([level1_segment level2_segment level3_segment] c) -> q{
+      $c
+   }
+   ([level1_segment level2_segment level3_segment] s1 s2) -> q{
+      $s2
+      $s1
+   }
+   ([level1_segment level2_segment level3_segment] s1 s2 s3) -> q{
+      $s3
+      $s2
+      $s1
+   }
+   ([level1_clause level2_clause] *) as c -> q{
+      |colspan="${c.length}"|
+      &nbsp;
+   }
+   (level3_clause *) as c -> q{
+      |colspan="${c.length}"|
+      <div dir="rtl">${c.text}</div><br />${c.name==""? "&nbsp;": c.name}
+   }
+   (level4_segment *) as s -> q{
+      |colspan="${s.length}"|
+      <div dir="rtl">${s.text}</div><br />${s.name==""? "&nbsp;": s.name}
+   }
+}
+
+print rules wikitab_end {
+   ("verse" chapter verse segment) as v -> q{
+      |-
+      |'''Worte'''
+      $segment
+      |${"}"}
+   }
+   ("verse" chapter verse segment markers) as v -> q{
+      |-
+      |'''Worte'''
+      $segment
+      |${"}"}
+   }
+   ("sof_pasuq_segment" siluq_segment) -> q{
+      $siluq_segment
+   }
+   ("sof_pasuq_segment" etnahta_segment siluq_segment) -> q{
+      $siluq_segment
+      $etnahta_segment
+   }
+   (segment c) -> q{
+      $c
+   }
+   (segment s1 s2) -> q{
+      $s2
+      $s1
+   }
+   (segment s1 s2 s3) -> q{
+      $s3
+      $s2
+      $s1
+   }
+   (clause w) -> q{
+      $w
+   }
+   (clause conjunctives w) -> q{
+      $w
+      $conjunctives
+   }
+   ("conjunctive_words" w...) -> q{
+      ${wikitab_end_reverse(w)}
+   }
+   (word *) as w -> q{
+      |<div dir="rtl">${w.text}</div><br />${w.name}
+   }
+}
+
+attribution rules {
+   ("verse" chapter verse_number segment...) as v -> {
+      v.chapter = tokentext(chapter);
+      v.verse = tokentext(verse_number);
+   }
+   ("verse" chapter verse_number segment...) as v in ("book" name verse...) -> {
+      v.book = tokentext(name);
+   }
+}
+
+sub wikitab(verse) {
+   assert(operator(verse) == "verse");
+   verse.colspan = verse.length + 1;
+   if (exists verse.book) {
+      verse.title = get_verse_title(verse.book, verse.chapter, verse.verse);
+   } else {
+      verse.title = get_verse_title(verse.chapter, verse.verse);
+   }
+   var s = wikitab_start(verse) & "\n" & wikitab_level1(verse);
+   if (verse.maxlevel > 1) {
+      s &= "\n" & wikitab_level2(verse);
+      if (verse.maxlevel > 2) {
+	 s &= "\n" & wikitab_level3(verse);
+	 if (verse.maxlevel > 3) {
+	    s &= "\n" & wikitab_level4(verse);
+	 }
+      }
+   }
+   s &= "\n" & wikitab_end(verse);
+   return s;
+}

@@ -1,0 +1,43 @@
+#!../src/astl-tanach
+
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tanach texts is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tanach texts is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/* this utility converts Tanach texts as provided by tanach.us
+   into an intermediate language which is eases the grammatical
+   analysis done by astl-tropes */
+
+library "../lib";
+import trope;
+
+/* this function is used by print_tropes */
+sub gen_text(object) {
+   var text;
+   if (exists object.utf8_string) {
+      text = object.utf8_string;
+   } else {
+      text = object.utf8;
+   }
+   /* switch on right-to-left, add Hebrew text,
+      and pop the right-to-left mode */
+   return "\u200f" & text & "\u202c";
+}
+
+sub main {
+   print_tropes(root);
+}

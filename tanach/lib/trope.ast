@@ -1,0 +1,551 @@
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tanach texts is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tanach texts is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+sub wiki_unicode_char(character) {
+   return "&#x" & character.unicode_hex & ";";
+}
+
+sub is_conjunctive(trope) {
+   return exists root.conjunctive{trope};
+}
+
+sub is_disjunctive(trope) {
+   return exists root.disjunctive{trope};
+}
+
+sub init_node_for_tropes(node) {
+   node.tropes = []; // can be selective
+   node.all_tropes = []; // all tropes in their order
+   node.unicode_hex_string = "";
+   node.utf8_string = "";
+   node.disjunctive = false;
+}
+
+sub compute_trope_list(node) {
+   if (len(node.all_tropes) > 1) {
+      var list = "{";
+      var count = 0;
+      foreach trope in (node.all_tropes) {
+	 if (count == 0) {
+	    list &= trope;
+	 } else {
+	    list &= ", " & trope;
+	 }
+	 ++count;
+      }
+      list &= "}";
+      node.trope_list = list;
+   }
+}
+
+sub add_trope(node, trope) {
+   var tropes = node.tropes;
+   var disjunctive = is_disjunctive(trope);
+   if (disjunctive) {
+      node.disjunctive = true;
+   }
+   /* pashta may occur repeatedly, see I. Yeivin, translated by E. J. Revell,
+      section 239, p. 194; in this case we ignore the repetition;
+      I. Yeivin, section 372, p. 273: tsinnorit is a secondary
+      accent, always coming with another conjunctive accent */
+   if (trope != "tsinnorit" &&
+	 (trope != "pashta" || len(tropes) != 1 || tropes[0] != "pashta")) {
+      /* in case of conflicts, give disjunctive tropes a priority
+         over conjunctive tropes;
+	 see, for example, I. Yeivin section 219 on p. 182, how
+	 a secondary munah variates the melody of zaqef;
+	 or Jacobson, p. 171, how a mahapakh takes the role of
+	 a meteg in a word with the disjunctive pashta accent;
+	 or Jacobson, p. 179, how qadma and mahapakh can be
+	 combined where qadma takes the role of the meteg
+	 or likewise munah and mahpakh;
+	 or Jacobson, p. 214, geresh and qadma on the same
+	 word where qadma assumes the role of a meteg;
+	 or Jacobson, p. 263, telisha gedolah and geresh,
+	 both disjunctive tropes of the 4th level can appear
+	 on a word; in this case the word is split by the grammar
+	 */
+      if (len(tropes) == 1 && is_conjunctive(tropes[0]) && disjunctive) {
+	 tropes[0] = trope;
+      } elsif (len(tropes) != 1 || disjunctive || is_conjunctive(tropes[0])) {
+	 push(tropes, trope);
+      }
+   }
+   push(node.all_tropes, trope);
+}
+
+attribution rules tropes_pass1 {
+   ("word_segment" *) as ws -> pre {
+      ws.last = false;
+   }
+   ("word_segment" *) as segment
+	 in ("word" *) as word
+	 and in ("word_sequence" *) as ws -> post {
+      ws.last_segment = segment;
+      word.last_segment = segment;
+   }
+   ("word_sequence" *) as ws-> post {
+      if (exists ws.last_segment) {
+	 ws.last_segment.last = true;
+      }
+   }
+   ("vocal_point" ("meteg") as meteg) in ("word_segment" *) as ws -> {
+      ws.last_meteg = meteg;
+   }
+   ("paseq") as paseq in ("word_sequence" *) as seq -> {
+      var last_word;
+      foreach word in (seq) {
+	 if (operator(word) == "word") {
+	    last_word = word;
+	 }
+	 if (operator(word) == "paseq" && defined(last_word)) {
+	    last_word.disjunctive = true;
+	    if (exists last_word.last_segment) {
+	       last_word.last_segment.disjunctive = true;
+	    }
+	 }
+      }
+   }
+   ("trope" ("munah")) in ("word_segment" *) as ws -> {
+      ws.munah_seen = true;
+   }
+   ("trope" ("qadma")) in ("word_segment" *) as ws -> {
+      ws.qadma_seen = true;
+   }
+   ("trope" ("mahapakh")) in ("word_segment" *) as ws -> {
+      ws.mahapakh_seen = true;
+   }
+   ("trope" ("merkha")) in ("word_segment" *) as ws -> {
+      ws.merkha = true;
+   }
+   /* create a list of trope nodes */
+   ("word_sequence" *) as ws -> pre {
+      ws.trope_nodes = [];
+   }
+   ("trope" trope) in ("word_segment" *) as seg
+	 and in ("word_sequence" *) as ws -> {
+      trope.name = operator(trope);
+      trope.disjunctive = is_disjunctive(trope.name);
+      push(ws.trope_nodes, trope);
+      trope.segment = seg;
+   }
+   ("word_sequence" *) as ws
+	 in ("verse" verse_number word_sequence) -> post {
+      /* check legarmeh candidates */
+      var candidate = null; var word_count = 0;
+      foreach trope in (ws.trope_nodes) {
+	 var seg = trope.segment;
+	 if (trope.name == "munah" && exists seg.disjunctive &&
+	       seg.disjunctive) {
+	    /* if candidate is non-null, we have a legarmeh
+	       followed by a legarmeh as in Gen 7:23, see I. Yeivin,
+	       section 278, p. 214; consequently we do not need
+	       to consider that case */
+	    candidate = trope; word_count = 1;
+	 } elsif (defined(candidate)) {
+	    if (trope.disjunctive) {
+	       if (trope.name == "revia") {
+		  /* legarmeh is not immediately followed by revia,
+		     see Jacobson, p. 235; please note that
+		     I. Yeivin considers Isa 42:5 as case of
+		     legarmeh where Jacobson considers this as
+		     munah; we follow here the simpler rule of Jacobson */
+		  if (word_count == 1) {
+		     // munah, not legarmeh
+		     candidate.segment.disjunctive = false;
+		  }
+		  candidate = null;
+	       } elsif (trope.name == "pashta" ||
+		     trope.name == "tevir" || trope.name == "geresh") {
+		  /* examples for ...
+			pashta: Lev 10:6
+			tevir:  Isa 36:2
+			geresh: Gen 28:9 */
+		  candidate = null;
+	       } else {
+		  /* in all other cases it is a munah, not legarmeh */
+		  candidate.segment.disjunctive = false;
+		  candidate = null;
+	       }
+	    }
+	    ++word_count;
+	 }
+      }
+   }
+   /* identify embedded paragraph symbols as in Gen 35:22 */
+   ("word" ("word_segment" ("letter" ("pe")))) as word -> {
+      word.paragraph = true;
+   }
+}
+
+inplace transformation rules tropes_pass2 {
+   ("vocal_point" ("meteg") as meteg) in ("word_segment" *) as ws
+	 where ws.last && exists ws.last_meteg && ws.last_meteg == meteg ->
+      ("trope" ("siluq") as siluq)
+      {
+	 siluq.unicode_hex = meteg.unicode_hex; 
+	 siluq.utf8 = meteg.utf8;
+      }
+   ("trope" ("munah") as munah) in ("word_segment" *) as ws
+      where exists ws.disjunctive && ws.disjunctive ->
+      ("trope" ("legarmeh") as legarmeh)
+      {
+	 legarmeh.unicode_hex = munah.unicode_hex; 
+	 legarmeh.utf8 = munah.utf8;
+      }
+   /* see Israel Yeivin / E. J. Revell, section 371, pp. 272 */
+   ("trope" ("shalshelet") as shalshelet) in ("word_segment" *) as ws
+      where exists ws.disjunctive && ws.disjunctive ->
+      ("trope" ("shalshelet_gedolah") as shalshelet_gedolah)
+      {
+	 shalshelet_gedolah.unicode_hex = shalshelet.unicode_hex; 
+	 shalshelet_gedolah.utf8 = shalshelet.utf8;
+      }
+   ("trope" ("shalshelet") as shalshelet) in ("word_segment" *) as ws
+      where !exists ws.disjunctive || !ws.disjunctive ->
+      ("trope" ("shalshelet_qetannah") as shalshelet_qetannah)
+      {
+	 shalshelet_qetannah.unicode_hex = shalshelet.unicode_hex; 
+	 shalshelet_qetannah.utf8 = shalshelet.utf8;
+      }
+   /* see Jacobson, p. 77 */
+   ("trope" ("zaqef_qatan") as zaqef_qatan) in ("word_segment" *) as ws
+      where exists ws.munah_seen ->
+      ("trope" ("munah_zaqef") as munah_zaqef)
+      {
+	 munah_zaqef.unicode_hex = zaqef_qatan.unicode_hex;
+	 munah_zaqef.utf8 = zaqef_qatan.utf8;
+      }
+   ("trope" ("zaqef_qatan") as zaqef_qatan) in ("word_segment" *) as ws
+      where exists ws.qadma_seen ->
+      ("trope" ("metigah_zaqef") as metigah_zaqef)
+      {
+	 metigah_zaqef.unicode_hex = zaqef_qatan.unicode_hex;
+	 metigah_zaqef.utf8 = zaqef_qatan.utf8;
+      }
+   /* tsinnorit has occasionally been mixed up with zarqa;
+      as real tsinnorit come always in conjunction with another trope
+      we look here for cases where tsinnorit does not appear in
+      conjunction with a mahapakh or merkha
+   */
+   ("trope" ("tsinnorit") as tsinnorit) in ("word_segment" *) as ws
+      where !exists ws.mahapakh_seen && !exists ws.merkha ->
+      ("trope" ("zarqa") as zarqa)
+      {
+	 zarqa.unicode_hex = "05AE"; // fix it, do not keep 0598
+	 zarqa.utf8 = "\u05AE";
+      }
+}
+
+attribution rules tropes_pass3 {
+   /* collect unicode_hex strings and tropes from the character sequences */
+   ("word_sequence_with_sof_pasuq" *) as ws -> pre {
+      ws.unicode_hex_string = "";
+      ws.utf8_string = "";
+   }
+   ("word_sequence" *) as ws -> pre {
+      init_node_for_tropes(ws);
+   }
+   ("word" *) as word -> pre {
+      init_node_for_tropes(word);
+   }
+   ("paseq") as paseq -> pre {
+      init_node_for_tropes(paseq);
+   }
+   ("word_segment" *) as ws -> pre {
+      init_node_for_tropes(ws);
+   }
+   ("letter" *) as letter -> pre {
+      init_node_for_tropes(letter);
+   }
+   ("letter" actual_letter) as letter -> pre {
+      letter.unicode_hex_string = wiki_unicode_char(actual_letter);
+      letter.utf8_string = actual_letter.utf8;
+   }
+   ("letter" actual_letter accent_sequence...) as letter -> pre {
+      letter.unicode_hex_string = wiki_unicode_char(actual_letter);
+      letter.utf8_string = actual_letter.utf8;
+   }
+   ("accent_sequence" *) as accent_sequence -> pre {
+      accent_sequence.unicode_hex_string = "";
+      accent_sequence.utf8_string = "";
+   }
+   ("accent_sequence" *) as accent_sequence in ("letter" *) as letter -> post {
+      letter.unicode_hex_string &= accent_sequence.unicode_hex_string;
+      letter.utf8_string &= accent_sequence.utf8_string;
+   }
+   ("vocal_point" vocal_point) in ("accent_sequence" *) as accent_sequence -> {
+      accent_sequence.unicode_hex_string &= wiki_unicode_char(vocal_point);
+      accent_sequence.utf8_string &= vocal_point.utf8;
+   }
+   ("trope" trope) in ("accent_sequence" *) as accent_sequence
+	 and in ("letter" *) as letter
+	 and in ("word_segment" *) as ws -> {
+      accent_sequence.unicode_hex_string &= wiki_unicode_char(trope);
+      accent_sequence.utf8_string &= trope.utf8;
+      add_trope(ws, operator(trope));
+      add_trope(letter, operator(trope));
+   }
+   ("upper_punctum_extraordinarium") as pe
+	 in ("accent_sequence" *) as accent_sequence -> {
+      accent_sequence.unicode_hex_string &= wiki_unicode_char(pe);
+      accent_sequence.utf8_string &= pe.utf8;
+   }
+   ("lower_punctum_extraordinarium") as pe
+	 in ("accent_sequence" *) as accent_sequence -> {
+      accent_sequence.unicode_hex_string &= wiki_unicode_char(pe);
+      accent_sequence.utf8_string &= pe.utf8;
+   }
+   ("letter" *) as letter in ("word_segment" *) as ws -> post {
+      ws.unicode_hex_string &= letter.unicode_hex_string;
+      ws.utf8_string &= letter.utf8_string;
+   }
+   ("maqaf") as maqaf in ("word" *) as segments -> {
+      init_node_for_tropes(maqaf);
+      var unicode = wiki_unicode_char(maqaf);
+      maqaf.unicode_hex_string = unicode;
+      maqaf.utf8_string = maqaf.utf8;
+      segments.unicode_hex_string &= unicode;
+      segments.utf8_string &= maqaf.utf8;
+   }
+   ("word_segment" *) as ws in ("word" *) as word
+	 and in ("word_sequence" *) as seq-> post {
+      word.unicode_hex_string &= ws.unicode_hex_string;
+      word.utf8_string &= ws.utf8_string;
+      foreach trope in (ws.tropes) {
+	 add_trope(word, trope);
+      }
+      compute_trope_list(ws);
+   }
+   ("word" *) as word in ("word_sequence" *) as ws -> post {
+      ws.unicode_hex_string &= word.unicode_hex_string;
+      ws.utf8_string &= word.utf8_string;
+      foreach trope in (word.tropes) {
+	 add_trope(ws, trope);
+      }
+      compute_trope_list(word);
+   }
+   ("sof_pasuq") as sof_pasuq in ("word_sequence_with_sof_pasuq" *) as ws -> {
+      ws.unicode_hex_string &= wiki_unicode_char(sof_pasuq);
+      ws.utf8_string &= sof_pasuq.utf8;
+   }
+   ("word_sequence" *) as ws
+	 in ("word_sequence_with_sof_pasuq" *) as wssp -> post {
+      wssp.unicode_hex_string &= ws.unicode_hex_string;
+      wssp.utf8_string &= ws.utf8_string;
+      wssp.tropes = ws.tropes;
+      wssp.all_tropes = ws.all_tropes;
+      compute_trope_list(ws);
+
+      // mark the beginnings of all clauses
+      var first_conjunctive = null;
+      var update = sub(node) {
+	 if (node.disjunctive && len(node.tropes) == 1) {
+	    if (defined(first_conjunctive)) {
+	       first_conjunctive.clause = node.tropes[0];
+	       first_conjunctive = null;
+	    }
+	    return false;
+	 }
+	 if (len(node.tropes) <= 1 || operator(node) == "letter") {
+	    if (!node.disjunctive && !defined(first_conjunctive)) {
+	       first_conjunctive = node;
+	    }
+	    return false;
+	 }
+	 return true;
+      };
+      foreach word in (ws) {
+	 if (exists word.disjunctive && update(word)) {
+	    foreach seg in (word) {
+	       if (exists seg.disjunctive && update(seg)) {
+		  foreach letter in (seg) {
+		     update(letter);
+		  }
+	       }
+	    }
+	 }
+      }
+   }
+   ("word_sequence" *) as ws -> post {
+      /* look for the last work segment */
+      var last_word_segment;
+      foreach word in (ws) {
+	 foreach ws in (word) {
+	    if (operator(ws) == "word_segment") {
+	       last_word_segment = ws;
+	    }
+	 }
+      }
+      if (defined(last_word_segment)) {
+	 last_word_segment.last = true;
+      }
+   }
+   /* extract book title from the comments and add it to the book */
+   ("comments" *) as comments -> pre {
+      comments.text = "";
+      comments.printable = false;
+   }
+   ("comment" token) as comment in ("comments" *) as comments -> {
+      var text = tokentext(token);
+      var res = text =~ m{xxxx\s+(.*)};
+      if (res) {
+	 comment.text = res[0];
+	 comment.printable = true;
+	 comments.printable = true;
+      } else {
+	 comment.text = text;
+	 comment.printable = false;
+      }
+      comments.text &= comment.text;
+   }
+   ("comment" token) as comment in ("book" *) as book
+	 where token =~ m{^xxxx\s+.*?\s\(\d+\schapter} -> {
+      var match = token =~ m{^xxxx\s+(.*?)\s\(\d+\schapter};
+      var title = match[0];
+      if (len(title) > 0 && !exists book.title) {
+	 book.title = title;
+      }
+   }
+}
+
+print rules print_rules_for_tropes {
+   /* top-level rules */
+   ("book" verse...) as book -> q{
+      book${exists book.title? " \"" & book.title & "\"": ""} {
+	 xxxx --------------------------------------------
+	 xxxx Generated from the Unicode text of tanach.us
+	 xxxx using astl-tanach which is available from
+	 xxxx https://github.com/afborchert/astl-tanach
+	 xxxx --------------------------------------------
+	 $verse
+	 $...
+      }
+   }
+   ("comments" comment...) as comments where comments.printable -> q{
+      $comment
+      $...
+   }
+   ("comments" comment...) as comments where !comments.printable -> q{}
+   ("comment" text) as comment where comment.printable -> q{${tokentext(text)}}
+   ("comment" text) as comment where !comment.printable -> q{}
+   ("verse" verse_number word_sequence) -> q{
+      verse $verse_number {
+	 $word_sequence
+      }
+   }
+   ("verse_number" chapter verse) -> q{$chapter:$verse}
+   ("word_sequence_with_sof_pasuq" element...) -> q{
+      $element
+      $...
+   }
+   ("word_sequence_with_sof_pasuq_and_paragraph_marker" seq marker...) -> q{
+      $seq
+      paragraph $marker $...
+   }
+   ("word_sequence" element...) -> q{
+      $element
+      $...
+   }
+   ("word" segment...) as word where len(word.tropes) == 0 -> q{
+      ${exists word.clause? word.clause & " clause ": ""}word { "${gen_text(word)}" }
+   }
+   ("word" segment...) as word where len(word.tropes) == 1 -> q{
+      ${exists word.clause? word.clause & " clause ": ""}${word.tropes[0]} word {
+	 "${gen_text(word)}"
+      }
+   }
+   ("word" segment...) as word where len(word.tropes) > 1 -> q{
+      $segment
+      $...
+   }
+   ("word_segment" *) as ws where len(ws.tropes) == 1 -> q{
+      ${exists ws.clause? ws.clause & " clause ": ""}${ws.tropes[0]} fragment { "${gen_text(ws)}" }
+   }
+   ("word_segment" *) as ws where len(ws.tropes) == 0 -> q{
+      ${exists ws.clause? ws.clause & " clause ": ""}fragment { "${gen_text(ws)}" }
+   }
+   ("word_segment" letter...) as ws where len(ws.tropes) > 1 -> q{
+      $letter
+      $...
+   }
+   ("maqaf") as maqaf -> q{
+      ${exists maqaf.clause? maqaf.clause & " clause ": ""}fragment { "${gen_text(maqaf)}" }
+   }
+   ("letter" *) as letter where len(letter.tropes) == 0 -> q{
+      ${exists letter.clause? letter.clause & " clause ": ""}letter { "${gen_text(letter)}" }
+   }
+   ("letter" *) as letter where len(letter.tropes) > 0 -> q{
+      ${exists letter.clause? letter.clause & " clause ": ""}${letter.tropes[0]} letter { "${gen_text(letter)}" }
+   }
+   ("sof_pasuq") as sp -> q{sof_pasuq "${gen_text(sp)}"}
+   ("paseq") as paseq -> q{
+      ${exists paseq.clause? paseq.clause & " clause ": ""}paseq "${gen_text(paseq)}"
+   }
+   ("pe") as pe -> q{pe "${gen_text(pe)}"}
+   ("samekh") as samekh -> q{samekh "${gen_text(samekh)}"}
+   ("nun_hafukha") as nun_hafukha ->
+      q{nun_hafukha "${gen_text(nun_hafukha)}"}
+}
+
+sub print_tropes {
+   var top = root;
+   if (len(args) == 1) {
+      top = args[0];
+   }
+   root.disjunctive = {
+      etnahta -> true,
+      geresh -> true,
+      geresh_muqdam -> true, /* ??? */
+      gershayim -> true,
+      legarmeh -> true,
+      munah_zaqef -> true,
+      metigah_zaqef -> true,
+      pashta -> true,
+      pazer -> true,
+      qarney_para -> true,
+      revia -> true,
+      segol -> true,
+      siluq -> true,
+      shalshelet_gedolah -> true,
+      telisha_gedola -> true,
+      tevir -> true,
+      tipeha -> true,
+      yetiv -> true,
+      zaqef_gadol -> true,
+      zaqef_qatan -> true,
+      zarqa -> true,
+   };
+   root.conjunctive = {
+      atnah_hafukh -> true,
+      darga -> true,
+      mahapakh -> true,
+      merkha -> true,
+      merkha_kefula -> true,
+      munah -> true,
+      qadma -> true,
+      shalshelet_qetannah -> true,
+      telisha_qetana -> true,
+      tsinnorit -> true,
+      yerah_ben_yomo -> true,
+   };
+   tropes_pass1(top);
+   tropes_pass2(top);
+   tropes_pass3(top);
+   println(print_rules_for_tropes(top));
+}

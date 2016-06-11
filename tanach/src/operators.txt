@@ -1,0 +1,95 @@
+#------------------------------------------------------------------------------
+# By default, string representations of operators are derived from
+# the name of the tokens used in the bison parser (see %token definitions)
+# this configuration file allows to override selected string representations
+# for the Astl language.
+#
+# Each configuration line consists of a token name, a colon, and
+# the string representation (any sequence of characters until end
+# of line).
+#
+# This file is processed by the gen operators.pl script.
+#------------------------------------------------------------------------------
+
+ETNAHTA:etnahta
+SEGOL:segol
+SHALSHELET:shalshelet
+ZAQEF_QATAN:zaqef qatan
+ZAQEF_GADOL:zaqef gadol
+TIPEHA:tipeha
+REVIA:revia
+ZARQA:zarqa
+PASHTA:pashta
+YETIV:yetiv
+TEVIR:tevir
+GERESH:geresh
+GERESH_MUQDAM:geresh muqdam
+GERSHAYIM:gershayim
+QARNEY_PARA:qarney para
+TELISHA_GEDOLA:telisha gedola
+PAZER:pazer
+ATNAH_HAFUKH:atnah hafukh
+MUNAH:munah
+MAHAPAKH:mahapakh
+MERKHA:merkha
+MERKHA_KEFULA:merkha kefula
+DARGA:darga
+QADMA:qadma
+QETANA:qetana
+YERAH_BEN_YOMO:yerah ben yomo
+OLE:ole
+ILUY:iluy
+DEHI:dehi
+ZINOR:zinor
+MASORA_CIRCLE:masora circle
+SHEVA:sheva
+HATAF_SEGOL:hataf segol
+HATAF_PATAH:hataf patah
+HATAF_QAMATS:hataf qamats
+HIRIQ:hiriq
+TSERE:tsere
+POINT_SEGOL:point segol
+POINT_PATAH:point patah
+POINT_QAMATS:point qamats
+POINT_HOLAM:point holam
+POINT_HOLAM_HASER_FOR_VAV:point holam haser for vav
+POINT_QUBUTS:point qubuts
+POINT_DEGESH_OR_MAPIQ:point degesh or mapiq
+POINT_METEG:point meteg
+MAQAF:maqaf
+POINT_RAFE:point rafe
+PASEQ:paseq
+SHIN_DOT:shin dot
+POINT_SIN_DOT:point sin dot
+SOF_PASUQ:sof pasuq
+MARK_UPPER_DOT:mark upper dot
+MARK_LOWER_DOT:mark lower dot
+NUN_HAFUKHA:nun hafukha
+QAMATS QATAN:qamats qatan
+ALEF:alef
+BET:bet
+GIMEL:gimel
+DALET:dalet
+HE:he
+VAV:vav
+ZAYIN:zayin
+HET:het
+TET:tet
+YOD:yod
+FINAL_KAF:final kaf
+KAF:kaf
+LAMED:lamed
+FINAL_MEM:final mem
+MEM:mem
+FINAL_NUN:final nun
+NUN:nun
+SAMEKH:samekh
+AYIN:ayin
+FINAL_PE:final pe
+PE:pe
+FINAL_TSADI:final tsadi
+TSADI:tsadi
+QOF:qof
+RESH:resh
+SHIN:shin
+TAV:tav

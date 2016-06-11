@@ -1,0 +1,60 @@
+#------------------------------------------------------------------------------
+# By default, string representations of operators are derived from
+# the name of the tokens used in the bison parser (see %token definitions)
+# this configuration file allows to override selected string representations
+# for the Astl language.
+#
+# Each configuration line consists of a token name, a colon, and
+# the string representation (any sequence of characters until end
+# of line).
+#
+# This file is processed by the gen operators.pl script.
+#------------------------------------------------------------------------------
+
+BOOK:book
+PARAGRAPH:paragraph
+VERSE:verse
+WORD:word
+MAQAF:maqaf
+PASEQ:paseq
+SOF_PASUQ:sof_pasuq
+PE:pe
+SAMEKH:samekh
+NUN_HAFUKHA:nun_hafukha
+DARGA:darga
+ETNAHTA:etnahta
+GERESH:geresh
+GERESH_MUQDAM:geresh_muqdam
+GERSHAYIM:gershayim
+LEGARMEH:legarmeh
+MAHAPAKH:mahapakh
+MERKHA:merkha
+MERKHA_KEFULA:merkha_kefula
+MUNAH:munah
+PASHTA:pashta
+PAZER:pazer
+QADMA:qadma
+QARNEY_PARA:qarney_para
+REVIA:revia
+SEGOL:segol
+SHALSHELET_GEDOLAH:shalshelet_gedolah
+SHALSHELET_QETANNAH:shalshelet_qetannah
+SILUQ:siluq
+TELISHA_GEDOLA:telisha_gedola
+TELISHA_QETANA:telisha_qetana
+TEVIR:tevir
+TIPEHA:tipeha
+YERAH_BEN_YOMO:yerah_ben_yomo
+YETIV:yetiv
+ZAQEF_GADOL:zaqef_gadol
+ZAQEF_QATAN:zaqef_qatan
+ZARQA:zarqa
+HEX_STRING:hex_string
+UTF8_STRING:utf8_string
+INTEGER:integer
+LBRACE:lbrace
+RBRACE:rbrace
+LBRACKET:lbracket
+RBRACKET:rbracket
+COLON:colon
+COMMENT:comment

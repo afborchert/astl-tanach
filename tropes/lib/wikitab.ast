@@ -62,7 +62,7 @@ print rules wikitab_level1 {
       $siluq_segment
       $etnahta_segment
    }
-   (level1_segment *) as s -> q{
+   ([level1_segment level1_clause] *) as s -> q{
       |colspan="${s.length}"|
       <div dir="rtl">${s.text}</div><br />${s.name==""? "&nbsp;": s.name}
    }

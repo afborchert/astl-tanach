@@ -5,8 +5,9 @@ Astl programming language and tools for the Tanach
 
 This is an implementation of the Astl programming language
 for Tanach texts in the form as distributed by tanach.us.
-for C. Astl is an easy to learn scripting language that is
-specialized on attributed abstract syntax trees.
+Astl is an easy to learn scripting language that is
+specialized on attributed abstract syntax trees. (You
+find a documentation in the subdirectory _astl/refman_.)
 
 Included are astl-tanach and astl-tropes. astl-tanach
 works directly on the accented plain texts from tanach.us.

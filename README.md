@@ -46,7 +46,7 @@ wget -O genesis.txt 'http://www.tanach.us/TextServer?Genesis*&content=Accents'
 You will find the links for other books by going to the index page
 at http://www.tanach.us/Tanach.xml, chosing one of the books,
 and selecting the link labeled _Accents_ in the _Text_ row
-from the table with download links.
+from the table with the download links.
 
 Any astl-tanach script takes always as first argument such a text,
 converts it into an abstract syntax tree (AST, hence the name Astl),
@@ -400,7 +400,7 @@ import text;
 
 attribution rules {
    ("shalshelet") in
-	 ("verse" ("verse_number" chapter verse) sequence) as v -> post {
+         ("verse" ("verse_number" chapter verse) sequence) as v -> post {
       gen_text(v);
       println(chapter, ":", verse, " ", v.text);
    }
@@ -536,6 +536,9 @@ $ tree.ast genesis-1:1.tropes
 $
 ```
 
+These syntax trees follow widely (James D. Price 1996, pp. 13–16)
+and (Joshua R. Jacobson, Chapter 2).
+
 Using astl-tropes scripts it is possible to transform
 such a syntax tree into a more readable representation.
 One tool named `gen_wikitab.ast` is provided which generates
@@ -586,8 +589,12 @@ grammatical structure of the Tanach texts:
 
  * Joshua R. Jacobson: _Chanting the Hebrew Bible_. The Art of Cantillation.
    The Jewish Publication Society, Philadelpha 2002, ISBN 0-827-0693-1
- * Israel Yeivin: _Introduction to the Tiberian Masorah_. Scholar Press,
-   Chico, California, 1980, ISBN 0-89130-373-1.
  * James D. Price: _The Syntax of Masoretic Accents in the Hebrew Bible_.
    Studies in the Bible and Early Christianity, Volume 27. The Edwin
    Mellen Press, Lewiston, New York, 1990. ISBN 0-88946-510-X.
+ * James D. Price: _Concordance of the Hebrew Accents used in
+   the Pentateuch_. In: _Concordance of the Hebrew Accents in the Hebrew Bible_.
+   Studies in the Bible and Early Christianity, Volume 34A. The Edwin
+   Mellen Press, Lewiston, New York, 1996. ISBN 0-7334-2395-8.
+ * Israel Yeivin: _Introduction to the Tiberian Masorah_. Scholar Press,
+   Chico, California, 1980, ISBN 0-89130-373-1.

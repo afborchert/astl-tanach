@@ -35,12 +35,23 @@ opset letters = [
    "qof" "resh" "shin" "tav"
 ];
 
-opset tropes = [
-   "atnah_hafukh" "darga" "etnahta" "geresh" "geresh_muqdam" "gershayim"
-   "mahapakh" "merkha" "merkha_kefula" "munah" "pashta" "pazer"
-   "qadma" "qarney_para" "revia" "segol" "shalshelet" "telisha_qetana"
-   "telisha_gedola" "tevir" "tipeha" "tsinnorit" "yerah_ben_yomo"
+opset disjunctive_tropes = [
+   "etnahta" "geresh" "geresh_muqdam" "gershayim" "legarmeh" "munah_zaqef"
+   "metigah_zaqef" "pashta" "pazer" "qarney_para" "revia" "segol"
+   "siluq" "shalshelet_gedolah" "telisha_gedola" "tevir" "tipeha"
    "yetiv" "zaqef_gadol" "zaqef_qatan" "zarqa"
+];
+
+opset conjunctive_tropes = [
+   "atnah_hafukh" "darga" "mahapakh" "merkha" "merkha_kefula"
+   "munah" "qadma" "shalshelet_qetannah" "telisha_qetana"
+   "tsinnorit" "yerah_ben_yomo"
+];
+
+/* depending on the context,
+   shalshelet appears as disjunctive or as conjunctive trope */
+opset tropes = [
+   disjunctive_tropes conjunctive_tropes "shalshelet"
 ];
 
 opset accents = [

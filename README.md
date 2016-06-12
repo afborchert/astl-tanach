@@ -370,8 +370,8 @@ header and the first verse:
 ```
 
 This representation permits simple analysis like finding verses
-with particular tropes. Following examples finds all verses in
-a particular text with a shalshelet:
+with particular tropes. Following examples finds all verses with
+a shalshelet in a particular text:
 
 ```
 attribution rules {
@@ -463,10 +463,86 @@ and store it into `genesis-1:1.tropes`:
    }
 ```
 
-This file can now be processed by `gen_wikitab.ast`:
+This file can now be parsed by scripts using the
+`astl-tropes` interpreter. Again, it helps to
+have a look at the resulting syntax tree. Here is
+the syntax tree generated for the first verse of the
+Genesis:
 
 ```
-gen_wikitab.ast genesis-1:1.tropes >genesis-1:1.wiki
+$ tree.ast genesis-1:1.tropes
+("verse"
+   1
+   1
+   ("sof_pasuq_segment"
+      ("etnahta_segment"
+         ("tipeha_clause"
+            ("tipeha_word"
+               ("text"
+                  בְּרֵאשִׁ֖ית
+               )
+            )
+         )
+         ("etnahta_clause"
+            ("conjunctive_words"
+               ("munah_word"
+                  ("text"
+                     בָּרָ֣א
+                  )
+               )
+            )
+            ("etnahta_word"
+               ("text"
+                  אֱלֹהִ֑ים
+               )
+            )
+         )
+      )
+      ("siluq_segment"
+         ("tipeha_clause"
+            ("conjunctive_words"
+               ("merkha_word"
+                  ("text"
+                     אֵ֥ת
+                  )
+               )
+            )
+            ("tipeha_word"
+               ("text"
+                  הַשָּׁמַ֖יִם
+               )
+            )
+         )
+         ("siluq_clause"
+            ("conjunctive_words"
+               ("merkha_word"
+                  ("text"
+                     וְאֵ֥ת
+                  )
+               )
+            )
+            ("siluq_word"
+               ("text"
+                  הָאָֽרֶץ
+               )
+            )
+         )
+      )
+   )
+   ("sof_pasuq"
+      ׃
+   )
+)
+$
+```
+
+Using astl-tropes scripts it is possible to transform
+such a syntax tree into a more readable representation.
+One tool named `gen_wikitab.ast` is provided which generates
+a table in MediaWiki syntax for it.
+
+```
+$ gen_wikitab.ast genesis-1:1.tropes >genesis-1:1.wiki
 ```
 
 This is the contents of `genesis-1:1.wiki`:

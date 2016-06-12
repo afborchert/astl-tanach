@@ -1,0 +1,23 @@
+#!../src/astl-tropes
+
+sub descend(nestlevel, node) {
+   var result = "";
+   if (isoperator(node)) {
+      result = " " x nestlevel & "(\"" & operator(node) & "\"";
+      if (len(node) > 0) {
+	 foreach operand in (node) {
+	    result = result & "\n" & descend(nestlevel + 3, operand);
+	 }
+	 result = result & "\n" & " " x nestlevel & ")";
+      } else {
+	 result = result & ")";
+      }
+   } else {
+      result = " " x nestlevel & tokentext(node);
+   }
+   return result;
+}
+
+sub main {
+   println(descend(0, root));
+}

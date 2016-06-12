@@ -1,0 +1,12 @@
+#!../src/astl-tanach
+
+library "../lib";
+import text;
+
+attribution rules {
+   ("shalshelet") in
+	 ("verse" ("verse_number" chapter verse) sequence) as v -> post {
+      gen_text(v);
+      println(chapter, ":", verse, " ", sequence.text);
+   }
+}

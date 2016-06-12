@@ -1,0 +1,70 @@
+/*
+   Copyright (C) 2015 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tanach texts is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tanach texts is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+import opsets;
+
+attribution rules gen_text {
+   ([characters]) as character -> {
+      character.text = character.utf8;
+   }
+   ([comments] *) as comment -> {
+      comment.text = "";
+   }
+   ("vocal_point" accent) as vocal_point -> post {
+      vocal_point.text = accent.text;
+   }
+   ("trope" accent) as trope -> post {
+      trope.text = accent.text;
+   }
+   ("accent_sequence" accents...) as acc_seq -> post {
+      acc_seq.text = "";
+      foreach accent in (accents) {
+	 acc_seq.text &= accent.text;
+      }
+   }
+   ("letter" letter) as l -> post {
+      l.text = letter.utf8;
+   }
+   ("letter" letter accent_sequence) as l -> post {
+      l.text = letter.utf8 & accent_sequence.text;
+   }
+   ("word_segment" letters...) as ws -> post {
+      ws.text = "";
+      foreach letter in (letters) {
+	 ws.text &= letter.text;
+      }
+   }
+   ("word" segments...) as word -> post {
+      word.text = "";
+      foreach segment in (segments) {
+	 word.text &= segment.text;
+      }
+   }
+   ([word_sequences] element...) as ws -> post {
+      ws.text = "";
+      foreach element in (element) {
+	 ws.text &= element.text;
+      }
+   }
+   ("verse" number sequence) as verse -> post {
+      verse.text = sequence.text;
+   }
+   ("verse" number sequence comments) as verse -> post {
+      verse.text = sequence.text;
+   }
+}

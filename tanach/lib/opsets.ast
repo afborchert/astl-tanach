@@ -1,0 +1,60 @@
+/*
+   Copyright (C) 2016 Andreas Franz Borchert
+   ----------------------------------------------------------------------------
+   The Astl Library for Tanach texts is free software; you can redistribute it
+   and/or modify it under the terms of the GNU Library General Public
+   License as published by the Free Software Foundation; either version
+   2 of the License, or (at your option) any later version.
+
+   The Astl Library for Tanach texts is distributed in the hope that it will be
+   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this library; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+opset vocal_points = [
+   "dehi" "hataf_patah" "hataf_qamats" "hataf_segol" "hiriq"
+   "iluy" "masora_circle" "nun_hafukha" "ole" "degesh_or_mapiq"
+   "holam" "holam_haser_for_vav" "meteg" "patah" "qamats"
+   "qubuts" "rafe" "point_segol" "sin_dot" "qamats_qatan" "sheva"
+   "shin_dot" "tsere"
+];
+
+opset punctum_extraordinarium = [
+   "lower_punctum_extraordinarium" "upper_punctum_extraordinarium"
+];
+
+opset letters = [
+   "alef" "bet" "gimel" "dalet" "he" "vav" "zayin" "het" "tet"
+   "yod" "final_kaf" "kaf" "lamed" "final_mem" "mem" "final_nun"
+   "nun" "samekh" "ayin" "final_pe" "pe" "final_tsadi" "tsadi"
+   "qof" "resh" "shin" "tav"
+];
+
+opset tropes = [
+   "atnah_hafukh" "darga" "etnahta" "geresh" "geresh_muqdam" "gershayim"
+   "mahapakh" "merkha" "merkha_kefula" "munah" "pashta" "pazer"
+   "qadma" "qarney_para" "revia" "segol" "shalshelet" "telisha_qetana"
+   "telisha_gedola" "tevir" "tipeha" "tsinnorit" "yerah_ben_yomo"
+   "yetiv" "zaqef_gadol" "zaqef_qatan" "zarqa"
+];
+
+opset accents = [
+   vocal_points tropes punctum_extraordinarium "zero_width_joiner"
+];
+
+opset characters = [accents letters "maqaf" "paseq" "sof_pasuq"];
+
+opset word_sequences = [
+   "word_sequence"
+   "word_sequence_with_sof_pasuq"
+   "word_sequence_with_sof_pasuq_and_paragraph_marker"
+];
+
+opset comments = [
+   "comment" "comment_section" "comments"
+];
